@@ -1,5 +1,13 @@
 #include <Arduino.h>
 
-void setup() {}
+void G7_setup() {}
 
-void loop() {} 
+void G7_loop() {}
+
+void setup() {
+  G7_setup();
+}
+
+void loop() {
+  G7_loop();
+} 
