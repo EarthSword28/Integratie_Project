@@ -1,1 +1,0 @@
-// zet hier alle constanten
