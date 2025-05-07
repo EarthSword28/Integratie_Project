@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/include",
-                "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/src",
+                "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/Code_FireBeetle/include",
+                "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/Code_FireBeetle/src",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                 "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -244,8 +244,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/include",
-                    "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/src",
+                    "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/Code_FireBeetle/include",
+                    "C:/Users/jorde/Documents/Jorden van Nunen/Documents/KDG/IoT/Integratie Project (sem 2)/PlatformIO/Integratie_Project_Groep_7_FireBeetle/Code_FireBeetle/src",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                     "C:/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
