@@ -32,15 +32,18 @@
 */
 
 #include <Arduino.h>
+#include <HX711.h>
 
-#define DOUT  3
-#define CLK  2
+#define DOUT  15
+#define CLK  35
 
-HX711 scale(DOUT, CLK);
+HX711 scale;
 
-float calibration_factor = -7050; //-7050 worked for my 440lb max scale setup
+float calibration_factor = -7050.0; //-7050 worked for my 440lb max scale setup
 
 void setup() {
+  scale.begin(DOUT, CLK);
+
   Serial.begin(9600);
   Serial.println("HX711 calibration sketch");
   Serial.println("Remove all weight from scale");
