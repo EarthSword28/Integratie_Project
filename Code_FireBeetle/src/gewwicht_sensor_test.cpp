@@ -33,9 +33,6 @@
 
 #include <Arduino.h>
 
-
-#include <HX711.h>
-
 #define DOUT  3
 #define CLK  2
 
