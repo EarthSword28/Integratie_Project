@@ -35,11 +35,16 @@
 #include <HX711.h>
 
 #define DOUT  15
-#define CLK  35
+#define CLK  18
 
 HX711 scale;
 
-float calibration_factor = -7050.0; //-7050 worked for my 440lb max scale setup
+float calibration_factor = -50000.0; //-7050 worked for my 440lb max scale setup
+
+const int timeInterval = 5000;
+unsigned long timer = 0;
+unsigned long currentTime = 0;
+String temp = "";
 
 void setup() {
   scale.begin(DOUT, CLK);
@@ -54,28 +59,36 @@ void setup() {
   scale.set_scale();
   scale.tare();	//Reset the scale to 0
 
+  Serial.println("Start read_average");
   long zero_factor = scale.read_average(); //Get a baseline reading
+  Serial.println("Na read_average");
   Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
   Serial.println(zero_factor);
 }
 
 void loop() {
+  currentTime = millis();
+  if (currentTime >= timer) {
+    timer = currentTime + timeInterval;
+    delay(1000);
 
-  scale.set_scale(calibration_factor); //Adjust to this calibration factor
+    scale.set_scale(calibration_factor); //Adjust to this calibration factor
 
-  Serial.print("Reading: ");
-  Serial.print(scale.get_units(), 1);
-  Serial.print(" lbs"); //Change this to kg and re-adjust the calibration factor if you follow SI units like a sane person
-  Serial.print(" calibration_factor: ");
-  Serial.print(calibration_factor);
-  Serial.println();
+    Serial.print("Reading: ");
+    Serial.print(scale.get_units(), 1);
+    Serial.print(" lbs"); //Change this to kg and re-adjust the calibration factor if you follow SI units like a sane person
+    Serial.print(" calibration_factor: ");
+    Serial.print(calibration_factor);
+    Serial.println();
+  }
 
-  if(Serial.available())
-  {
-    char temp = Serial.read();
-    if(temp == '+' || temp == 'a')
+  if(Serial.available() > 0) {
+    temp = Serial.readString();
+    if(temp == "+" || temp == "a") {
       calibration_factor += 10;
-    else if(temp == '-' || temp == 'z')
+    }
+    else if(temp == "-" || temp == "z") {
       calibration_factor -= 10;
+    }
   }
 }
