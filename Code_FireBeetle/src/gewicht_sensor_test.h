@@ -70,7 +70,6 @@ void loop() {
   currentTime = millis();
   if (currentTime >= timer) {
     timer = currentTime + timeInterval;
-    delay(1000);
 
     scale.set_scale(calibration_factor); //Adjust to this calibration factor
 
