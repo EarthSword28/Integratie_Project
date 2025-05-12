@@ -1,5 +1,5 @@
 // BRONNEN
-  // Jorden: ChatGPT voor te kijken hoe ik een "typedef enum" moest gebruiken: https://chatgpt.com/share/6821e817-f398-800c-b2c0-8e9542afc3df (12/05/2025)
+  // Jorden: ChatGPT voor te kijken hoe ik de seriële monitor kon gebruiken met een Firebeetle ESP32-S3: https://chatgpt.com/share/68221f8f-84dc-800c-90e9-fb83332ecd26 (12/05/2025)
   // 
 
 #include <Arduino.h>
@@ -103,6 +103,7 @@ void G7_loop() {
 
   if (G7_huidigeMillis >= G7_sensorenIntervalTimer) {
     G7_sensorenIntervalTimer = G7_huidigeMillis + G7_sensorenTijdInterval;
+
     // TODO: Haal data op (vochtigheid en temperatuur in core)
     G7_getDataCore();
 
