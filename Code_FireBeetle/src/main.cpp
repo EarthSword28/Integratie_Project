@@ -1,10 +1,121 @@
+// BRONNEN
+  // Jorden: ChatGPT voor te kijken hoe ik een "typedef enum" moest gebruiken: https://chatgpt.com/share/6821e817-f398-800c-b2c0-8e9542afc3df (12/05/2025)
+  // 
+
 #include <Arduino.h>
 
 #include <G7_config.h>
 
-void G7_setup() {}
+#include <Adafruit_SHT4x.h>
 
-void G7_loop() {}
+Adafruit_SHT4x sht4 = Adafruit_SHT4x();
+
+unsigned long G7_huidigeMillis = 0;
+unsigned long G7_sensorenIntervalTimer = 0;
+
+float G7_temperatureCore = 0.0;
+float G7_humidityCore = 0.0;
+
+void G7_SHT4xSetupPrecision() {
+  // You can have 3 different precisions, higher precision takes longer
+  sht4.setPrecision(SHT4X_HIGH_PRECISION);
+  if (sht4.getPrecision() == SHT4X_HIGH_PRECISION) {
+    Serial.println("High precision");
+  }
+  else if (sht4.getPrecision() == SHT4X_MED_PRECISION) {
+    Serial.println("Med precision");
+  }
+  else if (sht4.getPrecision() == SHT4X_LOW_PRECISION) {
+    Serial.println("Low precision");
+  }
+}
+
+void G7_SHT4xSetupHeater() {
+  // You can have 6 different heater settings
+  // higher heat and longer times uses more power
+  // and reads will take longer too!
+  sht4.setHeater(SHT4X_NO_HEATER);
+  if (sht4.getHeater() == SHT4X_NO_HEATER) {
+    Serial.println("No heater");
+  }
+  else if (sht4.getHeater() == SHT4X_HIGH_HEATER_1S) {
+    Serial.println("High heat for 1 second");
+  }
+  else if (sht4.getHeater() == SHT4X_HIGH_HEATER_100MS) {
+    Serial.println("High heat for 0.1 second");
+  }
+  else if (sht4.getHeater() == SHT4X_MED_HEATER_1S) {
+    Serial.println("Medium heat for 1 second");
+  }
+  else if (sht4.getHeater() == SHT4X_MED_HEATER_100MS) {
+    Serial.println("Medium heat for 0.1 second");
+  }
+  else if (sht4.getHeater() == SHT4X_LOW_HEATER_1S) {
+    Serial.println("Low heat for 1 second");
+  }
+  else if (sht4.getHeater() == SHT4X_LOW_HEATER_100MS) {
+    Serial.println("Low heat for 0.1 second");
+  }
+}
+
+void G7_setup() {
+  Serial.begin(9600);
+  
+  while (!Serial)
+    delay(10);     // will pause Zero, Leonardo, etc until serial console opens
+  
+  G7_sensorenIntervalTimer = millis();
+
+  Serial.println("Adafruit SHT4x test");
+  if (! sht4.begin()) {
+    Serial.println("Couldn't find SHT4x");
+    while (1) delay(1);
+  }
+  Serial.println("Found SHT4x sensor");
+  Serial.print("Serial number 0x");
+  Serial.println(sht4.readSerial(), HEX);
+
+  G7_SHT4xSetupPrecision();
+  G7_SHT4xSetupHeater();
+}
+
+// haal de temperatuur en de vochtigheid in de broedkamer op
+void G7_getDataCore() {
+  sensors_event_t humidity, temp;
+  sht4.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data
+
+  G7_humidityCore = humidity.relative_humidity;
+  G7_temperatureCore = temp.temperature;
+}
+
+void G7_sendData(float coreTemp, float coreHumid) {
+  Serial.print("Temperature core: ");
+  Serial.print(coreTemp);
+  Serial.println(" °C");
+  
+  Serial.print("Humidity core: ");
+  Serial.print(coreHumid);
+  Serial.println(" % rH");
+}
+
+void G7_loop() {
+  G7_huidigeMillis = millis();
+
+  if (G7_huidigeMillis >= G7_sensorenIntervalTimer) {
+    G7_sensorenIntervalTimer = G7_huidigeMillis + G7_sensorenTijdInterval;
+    // TODO: Haal data op (vochtigheid en temperatuur in core)
+    G7_getDataCore();
+
+    // TODO: Haal data op (vochtigheid en temperatuur in kast)
+
+    // TODO: Haal data op (vochtigheid en temperatuur buiten kast)
+
+    // TODO: Haal data op (gewicht)
+
+    // TODO: Stuur data door
+    G7_sendData(G7_temperatureCore, G7_humidityCore);
+  }
+}
 
 void setup() {
   G7_setup();
