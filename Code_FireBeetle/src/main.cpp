@@ -10,11 +10,25 @@
 
 Adafruit_SHT4x sht4 = Adafruit_SHT4x();
 
+#include <DHTesp.h>
+
+#define G7_sensorWall 14
+#define G7_sensorOutside 13
+
+DHTesp dht1;
+DHTesp dht2;
+
 unsigned long G7_huidigeMillis = 0;
 unsigned long G7_sensorenIntervalTimer = 0;
 
 float G7_temperatureCore = 0.0;
 float G7_humidityCore = 0.0;
+
+float G7_temperatureWall = 0.0;
+float G7_humidityWall = 0.0;
+
+float G7_temperatureOutside = 0.0;
+float G7_humidityOutside = 0.0;
 
 void G7_SHT4xSetupPrecision() {
   // You can have 3 different precisions, higher precision takes longer
@@ -77,6 +91,9 @@ void G7_setup() {
 
   G7_SHT4xSetupPrecision();
   G7_SHT4xSetupHeater();
+
+  dht1.setup(G7_sensorWall, DHTesp::DHT22);
+  dht2.setup(G7_sensorOutside, DHTesp::DHT22);
 }
 
 // haal de temperatuur en de vochtigheid in de broedkamer op
@@ -88,14 +105,39 @@ void G7_getDataCore() {
   G7_temperatureCore = temp.temperature;
 }
 
-void G7_sendData(float coreTemp, float coreHumid) {
+void G7_getDataWall() {
+  G7_temperatureWall = dht1.getTemperature();
+  G7_humidityWall = dht1.getHumidity();
+}
+
+void G7_getDataOutside() {
+  G7_temperatureOutside = dht2.getTemperature();
+  G7_humidityOutside = dht2.getHumidity();
+}
+
+void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid) {
   Serial.print("Temperature core: ");
   Serial.print(coreTemp);
   Serial.println(" °C");
-  
   Serial.print("Humidity core: ");
   Serial.print(coreHumid);
   Serial.println(" % rH");
+  
+  Serial.print("Temperature wall: ");
+  Serial.print(wallTemp);
+  Serial.println(" °C");
+  Serial.print("Humidity wall: ");
+  Serial.print(wallHumid);
+  Serial.println(" % rH");
+  
+  Serial.print("Temperature outside: ");
+  Serial.print(outsideTemp);
+  Serial.println(" °C");
+  Serial.print("Humidity outside: ");
+  Serial.print(outsideHumid);
+  Serial.println(" % rH");
+
+  Serial.println("----------");
 }
 
 void G7_loop() {
@@ -108,13 +150,15 @@ void G7_loop() {
     G7_getDataCore();
 
     // TODO: Haal data op (vochtigheid en temperatuur in kast)
+    G7_getDataWall();
 
     // TODO: Haal data op (vochtigheid en temperatuur buiten kast)
+    G7_getDataOutside();
 
     // TODO: Haal data op (gewicht)
 
     // TODO: Stuur data door
-    G7_sendData(G7_temperatureCore, G7_humidityCore);
+    G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside);
   }
 }
 
