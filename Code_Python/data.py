@@ -10,19 +10,20 @@ import time
 FIREBEETLTE_PORT = "COM1"
 ser = None
 
-while True:
-  while ser == None:
-    ser = serial.Serial(FIREBEETLTE_PORT, 9600)
-    time.sleep(0.5)
-    continue
+def store_data():
+  while True:
+    while ser == None:
+      ser = serial.Serial(FIREBEETLTE_PORT, 9600)
+      time.sleep(0.5)
+      continue
 
-  if (ser.is_open):
-    raw_serial_data = ser.readline()
-    serial_data = raw_serial_data.decode().strip()
+    if (ser.is_open):
+      raw_serial_data = ser.readline()
+      serial_data = raw_serial_data.decode().strip()
 
-    # Open a file  
-    fo = open("data.txt", "a")
-    fo.write(serial_data)
+      # Open a file  
+      fo = open("data.txt", "a")
+      fo.write(serial_data)
 
-    # Close opened file
-    fo.close()
+      # Close opened file
+      fo.close()

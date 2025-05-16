@@ -118,28 +118,28 @@ void G7_getDataOutside() {
 }
 
 void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid) {
-  Serial.print("Temperature core: ");
-  Serial.print(coreTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity core: ");
-  Serial.print(coreHumid);
-  Serial.println(" % rH");
+  // Serial.print("Temperature core: ");
+  // Serial.print(coreTemp);
+  // Serial.println(" °C");
+  // Serial.print("Humidity core: ");
+  // Serial.print(coreHumid);
+  // Serial.println(" % rH");
   
-  Serial.print("Temperature wall: ");
-  Serial.print(wallTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity wall: ");
-  Serial.print(wallHumid);
-  Serial.println(" % rH");
+  // Serial.print("Temperature wall: ");
+  // Serial.print(wallTemp);
+  // Serial.println(" °C");
+  // Serial.print("Humidity wall: ");
+  // Serial.print(wallHumid);
+  // Serial.println(" % rH");
   
-  Serial.print("Temperature outside: ");
-  Serial.print(outsideTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity outside: ");
-  Serial.print(outsideHumid);
-  Serial.println(" % rH");
+  // Serial.print("Temperature outside: ");
+  // Serial.print(outsideTemp);
+  // Serial.println(" °C");
+  // Serial.print("Humidity outside: ");
+  // Serial.print(outsideHumid);
+  // Serial.println(" % rH");
 
-  Serial.println("----------");
+  // Serial.println("----------");
 
   // legenda: START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@coreTemp$coreHumid$wallTemp$wallHumid$outsideTemp$outsideHumid@END
   sprintf(DataValues, "START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@%.2f%.2f%.2f%.2f%.2f%.2f@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid);  // verzamel alle variabelen in een string
