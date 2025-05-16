@@ -30,7 +30,9 @@ float G7_humidityWall = 0.0;
 float G7_temperatureOutside = 0.0;
 float G7_humidityOutside = 0.0;
 
-char DataValues[90];
+unsigned long G7_massa = 0;
+
+char DataValues[105];
 
 void G7_SHT4xSetupPrecision() {
   // You can have 3 different precisions, higher precision takes longer
@@ -117,7 +119,11 @@ void G7_getDataOutside() {
   G7_humidityOutside = dht2.getHumidity();
 }
 
-void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid) {
+void G7_getMass() {
+  G7_massa = 0;
+}
+
+void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid, int massa) {
   // Serial.print("Temperature core: ");
   // Serial.print(coreTemp);
   // Serial.println(" °C");
@@ -141,8 +147,8 @@ void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumi
 
   // Serial.println("----------");
 
-  // legenda: START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@coreTemp$coreHumid$wallTemp$wallHumid$outsideTemp$outsideHumid@END
-  sprintf(DataValues, "START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@%.2f%.2f%.2f%.2f%.2f%.2f@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid);  // verzamel alle variabelen in een string
+  // legenda: legenda: START@TEMP_CORE$coreTemp&HUMIDITY_CORE$coreHumid&TEMP_WALL$wallTemp&HUMIDITY_WALL$wallHumid&TEMP_OUT$outsideTemp&HUMIDITY_OUT$outsideHumid&MASS$massa@END
+  sprintf(DataValues, "START@TEMP_CORE$%.2f&HUMIDITY_CORE$%.2f&TEMP_WALL$%.2f&HUMIDITY_WALL$%.2f&TEMP_OUT$%.2f&HUMIDITY_OUT$%.2f&MASS$%d@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid, massa);  // verzamel alle variabelen in een string
   Serial.println(DataValues);  // stuur de string met variabelen door naar Python
 }
 
@@ -162,9 +168,10 @@ void G7_loop() {
     G7_getDataOutside();
 
     // TODO: Haal data op (gewicht)
+    G7_getMass();
 
     // TODO: Stuur data door
-    G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside);
+    G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
   }
 }
 
