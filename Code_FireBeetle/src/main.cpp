@@ -30,6 +30,8 @@ float G7_humidityWall = 0.0;
 float G7_temperatureOutside = 0.0;
 float G7_humidityOutside = 0.0;
 
+char DataValues[90];
+
 void G7_SHT4xSetupPrecision() {
   // You can have 3 different precisions, higher precision takes longer
   sht4.setPrecision(SHT4X_HIGH_PRECISION);
@@ -138,6 +140,10 @@ void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumi
   Serial.println(" % rH");
 
   Serial.println("----------");
+
+  // legenda: START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@coreTemp$coreHumid$wallTemp$wallHumid$outsideTemp$outsideHumid@END
+  sprintf(DataValues, "START@TEMP_CORE$HUMIDITY_CORE$TEMP_WALL$HUMIDITY_WALL$TEMP_OUT$HUMIDITY_OUT@%.2f%.2f%.2f%.2f%.2f%.2f@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid);  // verzamel alle variabelen in een string
+  Serial.println(DataValues);  // stuur de string met variabelen door naar Python
 }
 
 void G7_loop() {
