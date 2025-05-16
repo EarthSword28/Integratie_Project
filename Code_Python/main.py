@@ -51,18 +51,26 @@ def connect_port():
 
 def collect_data():
   ser = None
+  connection_timer = 0.5
 
   while True:
     while (ser == None):
       ser = connect_port()
-      time.sleep(0.5)
+      time.sleep(connection_timer)
       continue
 
     log = []
 
     if (ser.is_open):
       # legenda: START@TEMP_CORE$coreTemp&HUMIDITY_CORE$coreHumid&TEMP_WALL$wallTemp&HUMIDITY_WALL$wallHumid&TEMP_OUT$outsideTemp&HUMIDITY_OUT$outsideHumid&MASS$massa@END
-      raw_serial_data = ser.readline()
+      try:
+        raw_serial_data = ser.readline()
+      except Exception as e:
+        store_data("error_logs", e)
+        connection_timer = 60.0
+        ser = None
+        continue
+
       serial_data = raw_serial_data.decode().strip()
 
       if (serial_data.count("@") >= 2) and (serial_data.count("&") >= 1):
