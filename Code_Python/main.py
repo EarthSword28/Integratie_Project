@@ -4,14 +4,17 @@
 
   # het lezen van een serial port met python om de gegevens van de ESP32 binnen te halen: een vorig integratieproject waar ik aan gewerkt heb: https://github.com/ChaOsRul3z/SmartFridge (16/05/2025)
   # het openen van een serial port met python: https://pyserial.readthedocs.io/en/latest/shortintro.html (16/05/2025)
+  # het automatisch vinden en connecteren met een serial port: ChatGPT: https://chatgpt.com/share/68272b62-f2cc-800c-b31b-2c800d6e2f0b (16/05/2025)
 
-import serial
 import time
 from datetime import datetime
 
-FIREBEETLTE_PORT = "/dev/ttyACM0"
+import serial
+import serial.tools.list_ports
 
 DATETIME_FORMAT = "%d-%m-%Y %H:%M"  # de vorm van hoe tijdstippen worden opgeslagen
+
+DEVICE_TYPE = "USB"
 
 def get_current_time():
   try:
@@ -20,7 +23,7 @@ def get_current_time():
   except Exception as e:
     return f"ERROR: {e}"
 
-def store_data(file, log):
+def store_data(file:str, log):
   log_time = get_current_time()
   log_data = f"{log_time} [{log}]\n"
 
@@ -28,17 +31,32 @@ def store_data(file, log):
   fo.write(log_data)              # Bewaar de log
   fo.close()                      # Sluit het geopend bestand
 
+def connect_port():
+  ports = serial.tools.list_ports.comports()
+
+  attempted_logs = []
+
+  for port in ports:
+    if DEVICE_TYPE.lower() in port.description.lower():
+      try:
+        serial_connection = serial.Serial(port.device, 9600)
+        return serial_connection
+      except serial.SerialException as s:
+        attempted_logs.append({"connection_logs": s})
+      except Exception as e:
+        attempted_logs.append({"connection_logs": e})
+  
+  store_data("connection_logs", f"Geen geschikte COM-poort gevonden: [{attempted_logs}]")
+  return None
+
 def collect_data():
   ser = None
 
   while True:
     while (ser == None):
-      try:
-        ser = serial.Serial(FIREBEETLTE_PORT, 9600)
-      except Exception as e:
-        store_data("error_logs", e)
-        time.sleep(0.5)
-        continue
+      ser = connect_port()
+      time.sleep(0.5)
+      continue
 
     log = []
 

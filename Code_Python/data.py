@@ -20,14 +20,25 @@ def get_current_time():
   except Exception as e:
     return f"ERROR: {e}"
 
-def store_data():
+def store_data(file:str, log):
+  log_time = get_current_time()
+  log_data = f"{log_time} [{log}]\n"
+
+  fo = open(f"{file}.txt", "a")   # Open een bestand
+  fo.write(log_data)              # Bewaar de log
+  fo.close()                      # Sluit het geopend bestand
+
+def collect_data():
   ser = None
 
   while True:
     while (ser == None):
-      ser = serial.Serial(FIREBEETLTE_PORT, 9600)
-      time.sleep(0.5)
-      continue
+      try:
+        ser = serial.Serial(FIREBEETLTE_PORT, 9600)
+      except Exception as e:
+        store_data("error_logs", e)
+        time.sleep(0.5)
+        continue
 
     log = []
 
@@ -43,26 +54,20 @@ def store_data():
         continue
 
       for data in split_data_values:
-        variable = data.split("$")
-        log_variable = f"{variable[0]}: {variable[1]}"
+        try:
+          variable = data.split("$")
+          log_variable = f"{variable[0]}: {variable[1]}"
+        except Exception as e:
+          log_variable = f"ERROR: {e} {variable}"
         log.append(log_variable)
 
-      log_values = ""
+      log_data = ""
       for data in log:
-        if log_values == "":
-          log_values = data
+        if log_data == "":
+          log_data = data
         else:
-          log_values = f"{log_values} | {data}"
+          log_data = f"{log_data} | {data}"
       
-      log_time = get_current_time()
+      store_data("data", log_data)
 
-      log_data = f"({log_time}) {log_values}\n"
-
-      # Open a file  
-      fo = open("data.txt", "a")
-      fo.write(log_data)
-
-      # Close opened file
-      fo.close()
-
-store_data()
+collect_data()
