@@ -177,7 +177,12 @@ void G7_loop() {
     G7_getMass();
 
     // TODO: Stuur data door
-    G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
+    if (G7_DEBUG == HIGH) {
+      G7_debugData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
+    }
+    else {
+      G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
+    }
   }
 }
 
