@@ -124,32 +124,38 @@ void G7_getMass() {
 }
 
 void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid, int massa) {
-  // Serial.print("Temperature core: ");
-  // Serial.print(coreTemp);
-  // Serial.println(" °C");
-  // Serial.print("Humidity core: ");
-  // Serial.print(coreHumid);
-  // Serial.println(" % rH");
-  
-  // Serial.print("Temperature wall: ");
-  // Serial.print(wallTemp);
-  // Serial.println(" °C");
-  // Serial.print("Humidity wall: ");
-  // Serial.print(wallHumid);
-  // Serial.println(" % rH");
-  
-  // Serial.print("Temperature outside: ");
-  // Serial.print(outsideTemp);
-  // Serial.println(" °C");
-  // Serial.print("Humidity outside: ");
-  // Serial.print(outsideHumid);
-  // Serial.println(" % rH");
-
-  // Serial.println("----------");
-
   // legenda: legenda: START@TEMP_CORE$coreTemp&HUMIDITY_CORE$coreHumid&TEMP_WALL$wallTemp&HUMIDITY_WALL$wallHumid&TEMP_OUT$outsideTemp&HUMIDITY_OUT$outsideHumid&MASS$massa@END
   sprintf(DataValues, "START@TEMP_CORE$%.2f&HUMIDITY_CORE$%.2f&TEMP_WALL$%.2f&HUMIDITY_WALL$%.2f&TEMP_OUT$%.2f&HUMIDITY_OUT$%.2f&MASS$%d@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid, massa);  // verzamel alle variabelen in een string
   Serial.println(DataValues);  // stuur de string met variabelen door naar Python
+}
+
+void G7_debugData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid, int massa) {
+  Serial.print("Temperature core: ");
+  Serial.print(coreTemp);
+  Serial.println(" °C");
+  Serial.print("Humidity core: ");
+  Serial.print(coreHumid);
+  Serial.println(" % rH");
+  
+  Serial.print("Temperature wall: ");
+  Serial.print(wallTemp);
+  Serial.println(" °C");
+  Serial.print("Humidity wall: ");
+  Serial.print(wallHumid);
+  Serial.println(" % rH");
+  
+  Serial.print("Temperature outside: ");
+  Serial.print(outsideTemp);
+  Serial.println(" °C");
+  Serial.print("Humidity outside: ");
+  Serial.print(outsideHumid);
+  Serial.println(" % rH");
+
+  Serial.print("Gewicht kast: ");
+  Serial.print(massa);
+  Serial.println(" Kg");
+
+  Serial.println("----------");
 }
 
 void G7_loop() {
