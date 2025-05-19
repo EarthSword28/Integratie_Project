@@ -1,6 +1,7 @@
 // BRONNEN
   // Jorden: ChatGPT voor te kijken hoe ik de seriële monitor kon gebruiken met een Firebeetle ESP32-S3: https://chatgpt.com/share/68221f8f-84dc-800c-90e9-fb83332ecd26 (12/05/2025)
   // Jorden: Voorbeeld code voor de SHT45: https://learn.adafruit.com/adafruit-sht40-temperature-humidity-sensor/arduino (12/05/2025)
+  // Jorden: Meerder instanties van een DHT22 uitlezen: https://forum.arduino.cc/t/getting-multiple-readings-of-dht22-sensors-using-esp32/1020613 (12/05/2025)
 
 // INCLUDES:
 #include <Arduino.h>
