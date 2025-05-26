@@ -34,14 +34,14 @@
 #include <Arduino.h>
 #include <HX711.h>
 
-#define DOUT  15
-#define CLK  18
+#define DOUT  4
+#define CLK  12
 
 HX711 scale;
 
 float calibration_factor = -50000.0; //-7050 worked for my 440lb max scale setup
 
-const int timeInterval = 5000;
+const int timeInterval = 1000;
 unsigned long timer = 0;
 unsigned long currentTime = 0;
 String temp = "";
@@ -70,6 +70,7 @@ void loop() {
   currentTime = millis();
   if (currentTime >= timer) {
     timer = currentTime + timeInterval;
+    delay(1000);
 
     scale.set_scale(calibration_factor); //Adjust to this calibration factor
 
