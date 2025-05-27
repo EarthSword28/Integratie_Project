@@ -15,7 +15,6 @@
 #include <DHTesp.h>
 
 // de gebruikte pinnen
-#define G7_sensorWall 14
 #define G7_sensorOutside 13
 
 #define G7_sda1 1
