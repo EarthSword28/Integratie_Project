@@ -2,6 +2,7 @@
   // Jorden: ChatGPT voor te kijken hoe ik de seriële monitor kon gebruiken met een Firebeetle ESP32-S3: https://chatgpt.com/share/68221f8f-84dc-800c-90e9-fb83332ecd26 (12/05/2025)
   // Jorden: Voorbeeld code voor de SHT45: https://learn.adafruit.com/adafruit-sht40-temperature-humidity-sensor/arduino (12/05/2025)
   // Jorden: Meerder instanties van een DHT22 uitlezen: https://forum.arduino.cc/t/getting-multiple-readings-of-dht22-sensors-using-esp32/1020613 (12/05/2025)
+  // Jorden: ChatGPT voor meerder instanties van een SHT45 uit te lezen: https://chatgpt.com/share/6835b6cf-d988-800c-b2c6-ab10d9c639a6 (27/05/2025)
 
 // INCLUDES:
 #include <Arduino.h>
@@ -17,11 +18,21 @@
 #define G7_sensorWall 14
 #define G7_sensorOutside 13
 
-// activatie/configuratie sensoren
-Adafruit_SHT4x sht4 = Adafruit_SHT4x();
+#define G7_sda1 1
+#define G7_scl1 2
 
-DHTesp dht1;
-DHTesp dht2;
+#define G7_sda2 10
+#define G7_scl2 11
+
+// activatie/configuratie sensoren
+  // Maak een nieuwe I²C-bus aan op andere pinnen
+TwoWire I2C_1 = TwoWire(0);  // je kunt 0 of 1 gebruiken
+TwoWire I2C_2 = TwoWire(1);
+
+Adafruit_SHT4x sht1 = Adafruit_SHT4x();
+Adafruit_SHT4x sht2 = Adafruit_SHT4x();
+
+DHTesp dht22;
 
 // VARIABELEN
 unsigned long G7_huidigeMillis = 0;
@@ -41,83 +52,149 @@ unsigned long G7_massa = 0;
 char DataValues[105];
 
 
-// functie om de precisie van de SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupPrecision() {
+// functie om de precisie van de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT4xSetupPrecision1() {
   // You can have 3 different precisions, higher precision takes longer (from SHT45 Example Code)
-  sht4.setPrecision(SHT4X_HIGH_PRECISION);
-  if (sht4.getPrecision() == SHT4X_HIGH_PRECISION) {
+  sht1.setPrecision(SHT4X_HIGH_PRECISION);
+  if (sht1.getPrecision() == SHT4X_HIGH_PRECISION) {
     Serial.println("High precision");
   }
-  else if (sht4.getPrecision() == SHT4X_MED_PRECISION) {
+  else if (sht1.getPrecision() == SHT4X_MED_PRECISION) {
     Serial.println("Med precision");
   }
-  else if (sht4.getPrecision() == SHT4X_LOW_PRECISION) {
+  else if (sht1.getPrecision() == SHT4X_LOW_PRECISION) {
     Serial.println("Low precision");
   }
 }
 
-// functie om de heater van de SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupHeater() {
+// functie om de heater van de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT4xSetupHeater1() {
   // You can have 6 different heater settings     (from SHT45 Example Code)
   // higher heat and longer times uses more power (from SHT45 Example Code)
   // and reads will take longer too!              (from SHT45 Example Code)
-  sht4.setHeater(SHT4X_NO_HEATER);
-  if (sht4.getHeater() == SHT4X_NO_HEATER) {
+  sht1.setHeater(SHT4X_NO_HEATER);
+  if (sht1.getHeater() == SHT4X_NO_HEATER) {
     Serial.println("No heater");
   }
-  else if (sht4.getHeater() == SHT4X_HIGH_HEATER_1S) {
+  else if (sht1.getHeater() == SHT4X_HIGH_HEATER_1S) {
     Serial.println("High heat for 1 second");
   }
-  else if (sht4.getHeater() == SHT4X_HIGH_HEATER_100MS) {
+  else if (sht1.getHeater() == SHT4X_HIGH_HEATER_100MS) {
     Serial.println("High heat for 0.1 second");
   }
-  else if (sht4.getHeater() == SHT4X_MED_HEATER_1S) {
+  else if (sht1.getHeater() == SHT4X_MED_HEATER_1S) {
     Serial.println("Medium heat for 1 second");
   }
-  else if (sht4.getHeater() == SHT4X_MED_HEATER_100MS) {
+  else if (sht1.getHeater() == SHT4X_MED_HEATER_100MS) {
     Serial.println("Medium heat for 0.1 second");
   }
-  else if (sht4.getHeater() == SHT4X_LOW_HEATER_1S) {
+  else if (sht1.getHeater() == SHT4X_LOW_HEATER_1S) {
     Serial.println("Low heat for 1 second");
   }
-  else if (sht4.getHeater() == SHT4X_LOW_HEATER_100MS) {
+  else if (sht1.getHeater() == SHT4X_LOW_HEATER_100MS) {
     Serial.println("Low heat for 0.1 second");
   }
 }
 
-// functie om de SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT45Setup() {
+// functie om de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT45Setup1() {
   while (!Serial)
     delay(10);     // will pause Zero, Leonardo, etc until serial console opens (from SHT45 Example Code)
   
   G7_sensorenIntervalTimer = millis();
 
-  Serial.println("Adafruit SHT4x test");
-  if (! sht4.begin()) {
-    Serial.println("Couldn't find SHT4x");
+  if (! sht1.begin(&I2C_1)) {
+    Serial.println("Couldn't find the first SHT4x");
     while (1) delay(1);
   }
-  Serial.println("Found SHT4x sensor");
+  Serial.println("Found the first SHT4x sensor");
   Serial.print("Serial number 0x");
-  Serial.println(sht4.readSerial(), HEX);
+  Serial.println(sht1.readSerial(), HEX);
+  
+  G7_SHT4xSetupPrecision1();
+  G7_SHT4xSetupHeater1();
+}
+
+// functie om de precisie van de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT4xSetupPrecision2() {
+  // You can have 3 different precisions, higher precision takes longer (from SHT45 Example Code)
+  sht2.setPrecision(SHT4X_HIGH_PRECISION);
+  if (sht2.getPrecision() == SHT4X_HIGH_PRECISION) {
+    Serial.println("High precision");
+  }
+  else if (sht2.getPrecision() == SHT4X_MED_PRECISION) {
+    Serial.println("Med precision");
+  }
+  else if (sht2.getPrecision() == SHT4X_LOW_PRECISION) {
+    Serial.println("Low precision");
+  }
+}
+
+// functie om de heater van de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT4xSetupHeater2() {
+  // You can have 6 different heater settings     (from SHT45 Example Code)
+  // higher heat and longer times uses more power (from SHT45 Example Code)
+  // and reads will take longer too!              (from SHT45 Example Code)
+  sht2.setHeater(SHT4X_NO_HEATER);
+  if (sht2.getHeater() == SHT4X_NO_HEATER) {
+    Serial.println("No heater");
+  }
+  else if (sht2.getHeater() == SHT4X_HIGH_HEATER_1S) {
+    Serial.println("High heat for 1 second");
+  }
+  else if (sht2.getHeater() == SHT4X_HIGH_HEATER_100MS) {
+    Serial.println("High heat for 0.1 second");
+  }
+  else if (sht2.getHeater() == SHT4X_MED_HEATER_1S) {
+    Serial.println("Medium heat for 1 second");
+  }
+  else if (sht2.getHeater() == SHT4X_MED_HEATER_100MS) {
+    Serial.println("Medium heat for 0.1 second");
+  }
+  else if (sht2.getHeater() == SHT4X_LOW_HEATER_1S) {
+    Serial.println("Low heat for 1 second");
+  }
+  else if (sht2.getHeater() == SHT4X_LOW_HEATER_100MS) {
+    Serial.println("Low heat for 0.1 second");
+  }
+}
+
+// functie om de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
+void G7_SHT45Setup2() {
+  while (!Serial)
+    delay(10);     // will pause Zero, Leonardo, etc until serial console opens (from SHT45 Example Code)
+  
+  G7_sensorenIntervalTimer = millis();
+
+  if (! sht2.begin(&I2C_2)) {
+    Serial.println("Couldn't find the second SHT4x");
+    while (1) delay(1);
+  }
+  Serial.println("Found the second SHT4x sensor");
+  Serial.print("Serial number 0x");
+  Serial.println(sht2.readSerial(), HEX);
+  
+  G7_SHT4xSetupPrecision2();
+  G7_SHT4xSetupHeater2();
 }
 
 // functie om alle code die normaal in de void setup() functie goed te laten werken, ook als deze geïntegreerd word in het grotere geheel van de code waar ook de andere groepen aan gewerkt hebben
 void G7_setup() {
   Serial.begin(9600);  
 
-  G7_SHT45Setup();
-  G7_SHT4xSetupPrecision();
-  G7_SHT4xSetupHeater();
+  I2C_1.begin(G7_sda1, G7_scl1);
+  I2C_2.begin(G7_sda2, G7_scl2);
 
-  dht1.setup(G7_sensorWall, DHTesp::DHT22);
-  dht2.setup(G7_sensorOutside, DHTesp::DHT22);
+  G7_SHT45Setup1();
+  G7_SHT45Setup2();
+
+  dht22.setup(G7_sensorOutside, DHTesp::DHT22);
 }
 
 // functie om de temperatuur en de vochtigheid in de broedkamer op te halen
 void G7_getDataCore() {
   sensors_event_t humidity, temp;
-  sht4.getEvent(&humidity, &temp);// populate temp and humidity objects with fresh data (from SHT45 Example Code)
+  sht1.getEvent(&humidity, &temp);  // populate temp and humidity objects with fresh data (from SHT45 Example Code)
 
   G7_humidityCore = humidity.relative_humidity;
   G7_temperatureCore = temp.temperature;
@@ -125,14 +202,17 @@ void G7_getDataCore() {
 
 // functie om de temperatuur en de vochtigheid binnen de kast op te halen
 void G7_getDataWall() {
-  G7_temperatureWall = dht1.getTemperature();
-  G7_humidityWall = dht1.getHumidity();
+  sensors_event_t humidity, temp;
+  sht2.getEvent(&humidity, &temp);  // populate temp and humidity objects with fresh data (from SHT45 Example Code)
+
+  G7_humidityWall = humidity.relative_humidity;
+  G7_temperatureWall = temp.temperature;
 }
 
 // functie om de temperatuur en de vochtigheid buiten de kast op te halen
 void G7_getDataOutside() {
-  G7_temperatureOutside = dht2.getTemperature();
-  G7_humidityOutside = dht2.getHumidity();
+  G7_temperatureOutside = dht22.getTemperature();
+  G7_humidityOutside = dht22.getHumidity();
 }
 
 // functie om het gewicht van de kast op te halen
