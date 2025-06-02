@@ -39,7 +39,7 @@
 
 HX711 scale;
 
-float calibration_factor = -50000.0; //-7050 worked for my 440lb max scale setup
+float calibration_factor = -7050.0; //-7050 worked for my 440lb max scale setup
 
 const int timeInterval = 1000;
 unsigned long timer = 0;
