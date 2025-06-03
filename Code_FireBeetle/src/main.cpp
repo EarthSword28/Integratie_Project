@@ -1,294 +1,259 @@
-// BRONNEN
-  // Jorden: ChatGPT voor te kijken hoe ik de seriële monitor kon gebruiken met een Firebeetle ESP32-S3: https://chatgpt.com/share/68221f8f-84dc-800c-90e9-fb83332ecd26 (12/05/2025)
-  // Jorden: Voorbeeld code voor de SHT45: https://learn.adafruit.com/adafruit-sht40-temperature-humidity-sensor/arduino (12/05/2025)
-  // Jorden: Meerder instanties van een DHT22 uitlezen: https://forum.arduino.cc/t/getting-multiple-readings-of-dht22-sensors-using-esp32/1020613 (12/05/2025)
-  // Jorden: ChatGPT voor meerder instanties van een SHT45 uit te lezen: https://chatgpt.com/share/6835b6cf-d988-800c-b2c6-ab10d9c639a6 (27/05/2025)
-
-// INCLUDES:
 #include <Arduino.h>
+#include "config.h"           // Eigen configuratiebestand
+#include <WiFi.h>             // Standaard ESP32 WiFi
+#include <WiFiClientSecure.h> // Voor HTTPS
+#include <HTTPClient.h>       // Voor HTTP requests
+#include <ArduinoJson.h>      // Voor JSON manipulatie
+#include <Wire.h>             // Voor I2C
+#include <Adafruit_Sensor.h>  // Basis voor Adafruit sensoren
+#include <DHT.h>              // Voor DHT sensoren
+#include <DHT_U.h>            // Unified interface voor DHT
+#include <SensirionI2cSht4x.h> // De bedoelde SHT4x bibliotheek
+#include <SensirionCore.h>    // Nodig voor errorToString
+#include <NTPClient.h>        // Voor tijd synchronisatie
+#include <WiFiUdp.h>          // Voor NTP
+#include <time.h>             // Voor tijd formattering (strftime)
+#include <esp_sleep.h>        // Voor deep sleep functionaliteit
 
-  // de extra files die deel maken van de code en die ij zelf geschreven hebben
-#include <G7_config.h>
+// --- Sensor Pin & Type Instellingen (nu in main.cpp) ---
+#define DHT1_PIN 13
+#define DHT2_PIN 14
+#define DHT_TYPE DHT22
 
-  // de gebruikte libraries
-#include <Adafruit_SHT4x.h>
-#include <DHTesp.h>
+// --- Sensor IDs ---
+const int SENSOR_ID_DHT1_TEMP = 1;
+const int SENSOR_ID_DHT1_HUMID = 2;
+const int SENSOR_ID_DHT2_TEMP = 3;
+const int SENSOR_ID_DHT2_HUMID = 4;
+const int SENSOR_ID_SHT_TEMP = 5;
+const int SENSOR_ID_SHT_HUMID = 6;
+const int SENSOR_ID_HX711_WEIGHT = 7;
 
-// de gebruikte pinnen
-#define G7_sensorOutside 13
+// --- Globale Objecten ---
+DHT_Unified dht1(DHT1_PIN, DHT_TYPE);
+DHT_Unified dht2(DHT2_PIN, DHT_TYPE);
+SensirionI2cSht4x sht4x;
 
-#define G7_sda1 1
-#define G7_scl1 2
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, ntpServer, gmtOffset_sec, ntp_update_interval_ms);
 
-#define G7_sda2 10
-#define G7_scl2 11
+WiFiClientSecure secureClient;
+HTTPClient http;
 
-// activatie/configuratie sensoren
-  // Maak een nieuwe I²C-bus aan op andere pinnen
-TwoWire I2C_1 = TwoWire(0);  // je kunt 0 of 1 gebruiken
-TwoWire I2C_2 = TwoWire(1);
-
-Adafruit_SHT4x sht1 = Adafruit_SHT4x();
-Adafruit_SHT4x sht2 = Adafruit_SHT4x();
-
-DHTesp dht22;
-
-// VARIABELEN
-unsigned long G7_huidigeMillis = 0;
-unsigned long G7_sensorenIntervalTimer = 0;
-
-float G7_temperatureCore = 0.0;
-float G7_humidityCore = 0.0;
-
-float G7_temperatureWall = 0.0;
-float G7_humidityWall = 0.0;
-
-float G7_temperatureOutside = 0.0;
-float G7_humidityOutside = 0.0;
-
-unsigned long G7_massa = 0;
-
-char DataValues[105];
-
-
-// functie om de precisie van de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupPrecision1() {
-  // You can have 3 different precisions, higher precision takes longer (from SHT45 Example Code)
-  sht1.setPrecision(SHT4X_HIGH_PRECISION);
-  if (sht1.getPrecision() == SHT4X_HIGH_PRECISION) {
-    Serial.println("High precision");
-  }
-  else if (sht1.getPrecision() == SHT4X_MED_PRECISION) {
-    Serial.println("Med precision");
-  }
-  else if (sht1.getPrecision() == SHT4X_LOW_PRECISION) {
-    Serial.println("Low precision");
-  }
-}
-
-// functie om de heater van de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupHeater1() {
-  // You can have 6 different heater settings     (from SHT45 Example Code)
-  // higher heat and longer times uses more power (from SHT45 Example Code)
-  // and reads will take longer too!              (from SHT45 Example Code)
-  sht1.setHeater(SHT4X_NO_HEATER);
-  if (sht1.getHeater() == SHT4X_NO_HEATER) {
-    Serial.println("No heater");
-  }
-  else if (sht1.getHeater() == SHT4X_HIGH_HEATER_1S) {
-    Serial.println("High heat for 1 second");
-  }
-  else if (sht1.getHeater() == SHT4X_HIGH_HEATER_100MS) {
-    Serial.println("High heat for 0.1 second");
-  }
-  else if (sht1.getHeater() == SHT4X_MED_HEATER_1S) {
-    Serial.println("Medium heat for 1 second");
-  }
-  else if (sht1.getHeater() == SHT4X_MED_HEATER_100MS) {
-    Serial.println("Medium heat for 0.1 second");
-  }
-  else if (sht1.getHeater() == SHT4X_LOW_HEATER_1S) {
-    Serial.println("Low heat for 1 second");
-  }
-  else if (sht1.getHeater() == SHT4X_LOW_HEATER_100MS) {
-    Serial.println("Low heat for 0.1 second");
-  }
-}
-
-// functie om de eerste SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT45Setup1() {
-  while (!Serial)
-    delay(10);     // will pause Zero, Leonardo, etc until serial console opens (from SHT45 Example Code)
-  
-  G7_sensorenIntervalTimer = millis();
-
-  if (! sht1.begin(&I2C_1)) {
-    Serial.println("Couldn't find the first SHT4x");
-    while (1) delay(1);
-  }
-  Serial.println("Found the first SHT4x sensor");
-  Serial.print("Serial number 0x");
-  Serial.println(sht1.readSerial(), HEX);
-  
-  G7_SHT4xSetupPrecision1();
-  G7_SHT4xSetupHeater1();
-}
-
-// functie om de precisie van de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupPrecision2() {
-  // You can have 3 different precisions, higher precision takes longer (from SHT45 Example Code)
-  sht2.setPrecision(SHT4X_HIGH_PRECISION);
-  if (sht2.getPrecision() == SHT4X_HIGH_PRECISION) {
-    Serial.println("High precision");
-  }
-  else if (sht2.getPrecision() == SHT4X_MED_PRECISION) {
-    Serial.println("Med precision");
-  }
-  else if (sht2.getPrecision() == SHT4X_LOW_PRECISION) {
-    Serial.println("Low precision");
-  }
-}
-
-// functie om de heater van de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT4xSetupHeater2() {
-  // You can have 6 different heater settings     (from SHT45 Example Code)
-  // higher heat and longer times uses more power (from SHT45 Example Code)
-  // and reads will take longer too!              (from SHT45 Example Code)
-  sht2.setHeater(SHT4X_NO_HEATER);
-  if (sht2.getHeater() == SHT4X_NO_HEATER) {
-    Serial.println("No heater");
-  }
-  else if (sht2.getHeater() == SHT4X_HIGH_HEATER_1S) {
-    Serial.println("High heat for 1 second");
-  }
-  else if (sht2.getHeater() == SHT4X_HIGH_HEATER_100MS) {
-    Serial.println("High heat for 0.1 second");
-  }
-  else if (sht2.getHeater() == SHT4X_MED_HEATER_1S) {
-    Serial.println("Medium heat for 1 second");
-  }
-  else if (sht2.getHeater() == SHT4X_MED_HEATER_100MS) {
-    Serial.println("Medium heat for 0.1 second");
-  }
-  else if (sht2.getHeater() == SHT4X_LOW_HEATER_1S) {
-    Serial.println("Low heat for 1 second");
-  }
-  else if (sht2.getHeater() == SHT4X_LOW_HEATER_100MS) {
-    Serial.println("Low heat for 0.1 second");
-  }
-}
-
-// functie om de tweede SHT45 te configureren, deze code is direct afkomstig uit de voorbeeld code voor de SHT45
-void G7_SHT45Setup2() {
-  while (!Serial)
-    delay(10);     // will pause Zero, Leonardo, etc until serial console opens (from SHT45 Example Code)
-  
-  G7_sensorenIntervalTimer = millis();
-
-  if (! sht2.begin(&I2C_2)) {
-    Serial.println("Couldn't find the second SHT4x");
-    while (1) delay(1);
-  }
-  Serial.println("Found the second SHT4x sensor");
-  Serial.print("Serial number 0x");
-  Serial.println(sht2.readSerial(), HEX);
-  
-  G7_SHT4xSetupPrecision2();
-  G7_SHT4xSetupHeater2();
-}
-
-// functie om alle code die normaal in de void setup() functie goed te laten werken, ook als deze geïntegreerd word in het grotere geheel van de code waar ook de andere groepen aan gewerkt hebben
-void G7_setup() {
-  Serial.begin(9600);  
-
-  I2C_1.begin(G7_sda1, G7_scl1);
-  I2C_2.begin(G7_sda2, G7_scl2);
-
-  G7_SHT45Setup1();
-  G7_SHT45Setup2();
-
-  dht22.setup(G7_sensorOutside, DHTesp::DHT22);
-}
-
-// functie om de temperatuur en de vochtigheid in de broedkamer op te halen
-void G7_getDataCore() {
-  sensors_event_t humidity, temp;
-  sht1.getEvent(&humidity, &temp);  // populate temp and humidity objects with fresh data (from SHT45 Example Code)
-
-  G7_humidityCore = humidity.relative_humidity;
-  G7_temperatureCore = temp.temperature;
-}
-
-// functie om de temperatuur en de vochtigheid binnen de kast op te halen
-void G7_getDataWall() {
-  sensors_event_t humidity, temp;
-  sht2.getEvent(&humidity, &temp);  // populate temp and humidity objects with fresh data (from SHT45 Example Code)
-
-  G7_humidityWall = humidity.relative_humidity;
-  G7_temperatureWall = temp.temperature;
-}
-
-// functie om de temperatuur en de vochtigheid buiten de kast op te halen
-void G7_getDataOutside() {
-  G7_temperatureOutside = dht22.getTemperature();
-  G7_humidityOutside = dht22.getHumidity();
-}
-
-// functie om het gewicht van de kast op te halen
-void G7_getMass() {
-  G7_massa = 0; // PLACEHOLDER bij gebrek aan gewichtsensoren
-}
-
-// functie om de opgehaalde data door te sturen naar het centraal systeem
-void G7_sendData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid, int massa) {
-  // legenda: START@TEMP_CORE$coreTemp&HUMIDITY_CORE$coreHumid&TEMP_WALL$wallTemp&HUMIDITY_WALL$wallHumid&TEMP_OUT$outsideTemp&HUMIDITY_OUT$outsideHumid&MASS$massa@END
-  sprintf(DataValues, "START@TEMP_CORE$%.2f&HUMIDITY_CORE$%.2f&TEMP_WALL$%.2f&HUMIDITY_WALL$%.2f&TEMP_OUT$%.2f&HUMIDITY_OUT$%.2f&MASS$%d@END", coreTemp, coreHumid, wallTemp, wallHumid, outsideTemp, outsideHumid, massa);  // verzamel alle variabelen in een string
-  
-  // stuur de string met variabelen door naar Python
-  Serial.println(DataValues);
-}
-
-// DEBUG: functie om de opgehaalde data te lezen zonder ze door te sturen
-void G7_debugData(float coreTemp, float coreHumid, float wallTemp, float wallHumid, float outsideTemp, float outsideHumid, int massa) {
-  Serial.print("Temperature core: ");
-  Serial.print(coreTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity core: ");
-  Serial.print(coreHumid);
-  Serial.println(" % rH");
-  
-  Serial.print("Temperature wall: ");
-  Serial.print(wallTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity wall: ");
-  Serial.print(wallHumid);
-  Serial.println(" % rH");
-  
-  Serial.print("Temperature outside: ");
-  Serial.print(outsideTemp);
-  Serial.println(" °C");
-  Serial.print("Humidity outside: ");
-  Serial.print(outsideHumid);
-  Serial.println(" % rH");
-
-  Serial.print("Gewicht kast: ");
-  Serial.print(massa);
-  Serial.println(" Kg");
-
-  Serial.println("----------");
-}
-
-// functie om alle code die normaal in de void loop() functie goed te laten werken, ook als deze geïntegreerd word in het grotere geheel van de code waar ook de andere groepen aan gewerkt hebben
-void G7_loop() {
-  G7_huidigeMillis = millis();
-
-  if (G7_huidigeMillis >= G7_sensorenIntervalTimer) {
-    G7_sensorenIntervalTimer = G7_huidigeMillis + G7_sensorenTijdInterval;
-
-    // DONE: Haal data op (vochtigheid en temperatuur in core)
-    G7_getDataCore();
-
-    // DONE: Haal data op (vochtigheid en temperatuur in kast)
-    G7_getDataWall();
-
-    // DONE: Haal data op (vochtigheid en temperatuur buiten kast)
-    G7_getDataOutside();
-
-    // TODO: Haal data op (gewicht)
-    G7_getMass();   // temporary
-
-    // TODO: Stuur data door
-    G7_sendData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
-    if (G7_DEBUG == HIGH) {
-      G7_debugData(G7_temperatureCore, G7_humidityCore, G7_temperatureWall, G7_humidityWall, G7_temperatureOutside, G7_humidityOutside, G7_massa);
-    }
-  }
-}
+// Functie declaraties
+void connectWiFi();
+void syncNTPTime();
+String getFormattedTimestamp();
+void sendMeasurement(int sensorId, const String& timestamp, const char* valueKey, float value);
+void print_wakeup_reason();
 
 void setup() {
-  G7_setup();
+    // Optionele delay voor USB enumeratie, vooral bij native USB
+    // Probeer waarden tussen 500-2000 ms of verwijder als het niet helpt.
+    delay(1000);
+
+    Serial.begin(115200);
+
+    // Wacht tot de Serial Monitor verbonden is, met een timeout.
+    unsigned long serial_connect_start_time = millis();
+    // Wacht maximaal 5 seconden (5000 ms) op de Serial Monitor.
+    while (!Serial && (millis() - serial_connect_start_time < 5000)) {
+        delay(100); // Korte pauze om de CPU niet te overbelasten
+    }
+    // Als Serial nog steeds niet beschikbaar is na de timeout, gaat de code gewoon verder.
+    // Dit voorkomt dat het programma vastloopt als er geen Serial Monitor is aangesloten.
+
+    Serial.println("\nESP32 Sensor Data Logger - Deepsleep (SHT4x 0x44, Serial Wait)");
+
+    print_wakeup_reason();
+
+    Wire.begin();
+    dht1.begin();
+    dht2.begin();
+    sht4x.begin(Wire, 0x44);
+    Serial.println("SHT4x: Attempted to initialize with address 0x44.");
+
+    connectWiFi();
+
+    if (WiFi.status() == WL_CONNECTED) {
+        secureClient.setInsecure();
+        syncNTPTime();
+        String currentTimestamp = getFormattedTimestamp();
+
+        if (currentTimestamp != "TIME_NOT_SET") {
+            Serial.println("Current Timestamp: " + currentTimestamp);
+            // ... (rest van je sensor code) ...
+             sensors_event_t event_dht;
+            float temp_val, hum_val, weight_val;
+
+            // --- DHT1 (PIN13) ---
+            temp_val = NAN; hum_val = NAN;
+            dht1.temperature().getEvent(&event_dht);
+            if (!isnan(event_dht.temperature)) temp_val = event_dht.temperature;
+            sendMeasurement(SENSOR_ID_DHT1_TEMP, currentTimestamp, "temperature", temp_val);
+
+            dht1.humidity().getEvent(&event_dht);
+            if (!isnan(event_dht.relative_humidity)) hum_val = event_dht.relative_humidity;
+            sendMeasurement(SENSOR_ID_DHT1_HUMID, currentTimestamp, "humidity", hum_val);
+
+            // --- DHT2 (PIN14) ---
+            temp_val = NAN; hum_val = NAN;
+            dht2.temperature().getEvent(&event_dht);
+            if (!isnan(event_dht.temperature)) temp_val = event_dht.temperature;
+            sendMeasurement(SENSOR_ID_DHT2_TEMP, currentTimestamp, "temperature", temp_val);
+
+            dht2.humidity().getEvent(&event_dht);
+            if (!isnan(event_dht.relative_humidity)) hum_val = event_dht.relative_humidity;
+            sendMeasurement(SENSOR_ID_DHT2_HUMID, currentTimestamp, "humidity", hum_val);
+
+            // --- SHT4x (I2C) ---
+            temp_val = NAN; hum_val = NAN;
+            uint16_t errorSht;
+            char errorMessageSht[256];
+            errorSht = sht4x.measureHighPrecision(temp_val, hum_val);
+            if (errorSht) {
+                Serial.print("Error SHT4x measureHighPrecision: ");
+                errorToString(errorSht, errorMessageSht, sizeof(errorMessageSht));
+                Serial.println(errorMessageSht);
+                temp_val = NAN; hum_val = NAN;
+            }
+            sendMeasurement(SENSOR_ID_SHT_TEMP, currentTimestamp, "temperature", temp_val);
+            sendMeasurement(SENSOR_ID_SHT_HUMID, currentTimestamp, "humidity", hum_val);
+
+            // --- HX711 (Mock Data) ---
+            weight_val = random(5000, 350000) / 10.0;
+            sendMeasurement(SENSOR_ID_HX711_WEIGHT, currentTimestamp, "weight", weight_val);
+
+        } else {
+            Serial.println("Time not set, cannot send measurements this cycle.");
+        }
+    } else {
+        Serial.println("WiFi connection failed. Skipping data send this cycle.");
+    }
+
+    Serial.println("------------------------------------");
+    Serial.println("Going to sleep for " + String(TIME_TO_SLEEP_SECONDS) + " seconds.");
+    Serial.flush(); // Zorg dat alle seriële output verstuurd is
+
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP_SECONDS * uS_TO_S_FACTOR);
+    esp_deep_sleep_start();
 }
 
+
 void loop() {
-  G7_loop();
-} 
+    // Leeg
+}
+
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
+
+void connectWiFi() {
+    Serial.print("Connecting to WiFi: ");
+    Serial.println(ssid);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected!");
+        Serial.print("ESP32 IP Address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nFailed to connect to WiFi.");
+    }
+}
+
+void syncNTPTime() {
+    Serial.println("Synchronizing time with NTP server...");
+    timeClient.begin();
+    if (timeClient.forceUpdate()) {
+        time_t epochTime = timeClient.getEpochTime();
+        struct timeval tv;
+        tv.tv_sec = epochTime;
+        tv.tv_usec = 0;
+        settimeofday(&tv, nullptr);
+        Serial.println("System time set from NTP.");
+    } else {
+        Serial.println("Failed to synchronize time with NTP server.");
+    }
+}
+
+String getFormattedTimestamp() {
+    time_t now;
+    struct tm timeinfo;
+    char buffer[20];
+
+    time(&now);
+
+    if ((now - gmtOffset_sec) < 1577836800L) {
+        Serial.println("System time appears invalid or not set (UTC equivalent < 1 Jan 2020).");
+        return "TIME_NOT_SET";
+    }
+
+    gmtime_r(&now, &timeinfo);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    return String(buffer);
+}
+
+void sendMeasurement(int sensorId, const String& timestamp, const char* valueKey, float value) {
+    if (timestamp == "TIME_NOT_SET") {
+        Serial.printf("Sensor ID %d: Cannot send data, time not set.\n", sensorId);
+        return;
+    }
+    if (isnan(value)) {
+        Serial.printf("Sensor ID %d (%s): Value is NAN, skipping send.\n", sensorId, valueKey);
+        return;
+    }
+
+    StaticJsonDocument<256> doc;
+    doc["sensor_id"] = sensorId;
+    doc["timestamp"] = timestamp.c_str();
+
+    char floatBuffer[12];
+    dtostrf(value, 1, 2, floatBuffer);
+    doc[valueKey] = floatBuffer;
+
+    String jsonPayload;
+    serializeJson(doc, jsonPayload);
+
+    String serverUrl = String("https://") + api_host + ":" + String(api_port) + api_path_sensor_data;
+
+    Serial.printf("Sending to %s for sensor_id %d:\n%s\n", serverUrl.c_str(), sensorId, jsonPayload.c_str());
+
+    if (http.begin(secureClient, serverUrl)) {
+        http.addHeader("Content-Type", "application/json");
+        http.addHeader("X-API-Key", api_key);
+
+        int httpResponseCode = http.POST(jsonPayload);
+
+        if (httpResponseCode > 0) {
+            Serial.print("HTTP Response code: ");
+            Serial.println(httpResponseCode);
+            String responsePayload = http.getString();
+            Serial.println("Response: " + responsePayload);
+        } else {
+            Serial.print("Error on sending POST: ");
+            Serial.println(httpResponseCode);
+            Serial.printf("[HTTPS] POST... failed, error: %s\n", http.errorToString(httpResponseCode).c_str());
+        }
+        http.end();
+    } else {
+        Serial.printf("[HTTPS] Unable to connect to %s\n", serverUrl.c_str());
+    }
+    delay(750);
+}
