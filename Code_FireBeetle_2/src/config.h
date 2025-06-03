@@ -57,6 +57,6 @@ const char* rootCACertificate =
 
 // --- Gewicht sensoren ---
 const boolean gewichtSensorenBeschikbaar = LOW;       // indien gewicht sensoren aangesloten zet HIGH, indien niet aangesloten zet LOW
-const float calibration_factor = -15542.6;  // calibratie factor, moet ingesteld worden indien sensoren worden toegevoegd
+const float calibration_factor = -7050.0;  // calibratie factor, moet ingesteld worden indien sensoren worden toegevoegd
 
 #endif // CONFIG_H
