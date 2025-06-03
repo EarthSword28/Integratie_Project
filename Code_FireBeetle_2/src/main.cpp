@@ -264,6 +264,7 @@ void sendMeasurement(int sensorId, const String& timestamp, const char* valueKey
     delay(750);
 }
 
+// gebaseerd op voorbeeld code: https://learn.sparkfun.com/tutorials/load-cell-amplifier-hx711-breakout-hookup-guide/all#arduino-example (03/06/2025)
 float getWeight() {
     scale.begin(DOUT, CLK);
     scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
