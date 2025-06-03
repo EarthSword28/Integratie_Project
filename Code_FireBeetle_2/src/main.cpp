@@ -14,11 +14,15 @@
 #include <WiFiUdp.h>          // Voor NTP
 #include <time.h>             // Voor tijd formattering (strftime)
 #include <esp_sleep.h>        // Voor deep sleep functionaliteit
+#include <HX711.h>            // Voor de gewicht sensoren
 
 // --- Sensor Pin & Type Instellingen (nu in main.cpp) ---
 #define DHT1_PIN 13
 #define DHT2_PIN 14
 #define DHT_TYPE DHT22
+
+#define DOUT  4
+#define CLK  12
 
 // --- Sensor IDs ---
 const int SENSOR_ID_DHT1_TEMP = 1;
@@ -40,12 +44,15 @@ NTPClient timeClient(ntpUDP, ntpServer, gmtOffset_sec, ntp_update_interval_ms);
 WiFiClientSecure secureClient;
 HTTPClient http;
 
+HX711 scale;
+
 // Functie declaraties
 void connectWiFi();
 void syncNTPTime();
 String getFormattedTimestamp();
 void sendMeasurement(int sensorId, const String& timestamp, const char* valueKey, float value);
 void print_wakeup_reason();
+float getWeight();
 
 void setup() {
     Serial.begin(115200);
@@ -116,8 +123,12 @@ void setup() {
             sendMeasurement(SENSOR_ID_SHT_TEMP, currentTimestamp, "temperature", temp_val);
             sendMeasurement(SENSOR_ID_SHT_HUMID, currentTimestamp, "humidity", hum_val);
 
-            // --- HX711 (Mock Data) ---
-            weight_val = random(5000, 350000) / 10.0;
+            if (gewichtSensorenBeschikbaar == HIGH) {
+                weight_val = getWeight();
+            } else {
+                // --- HX711 (Mock Data) ---
+                weight_val = random(5000, 350000) / 10.0;
+            }
             sendMeasurement(SENSOR_ID_HX711_WEIGHT, currentTimestamp, "weight", weight_val);
 
         } else {
@@ -251,4 +262,11 @@ void sendMeasurement(int sensorId, const String& timestamp, const char* valueKey
         Serial.printf("[HTTPS] Unable to connect to %s\n", serverUrl.c_str());
     }
     delay(750);
+}
+
+float getWeight() {
+    scale.begin(DOUT, CLK);
+    scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+
+    return scale.get_units();
 }
