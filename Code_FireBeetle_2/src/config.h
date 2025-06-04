@@ -55,8 +55,4 @@ const char* rootCACertificate =
 #define uS_TO_S_FACTOR 1000000ULL       // Conversie factor microseconden naar seconden
 #define TIME_TO_SLEEP_SECONDS 60        // Aantal seconden slapen (1 minuut)
 
-// --- Gewicht sensoren ---
-const boolean gewichtSensorenBeschikbaar = LOW;       // indien gewicht sensoren aangesloten zet HIGH, indien niet aangesloten zet LOW
-const float calibration_factor = -7050.0;  // calibratie factor, moet ingesteld worden indien sensoren worden toegevoegd
-
 #endif // CONFIG_H
